@@ -1,0 +1,523 @@
+import matplotlib.mlab as mlab
+import re
+import multiprocessing
+import itertools
+import numpy as np
+import random
+import pandas as pd
+from scipy.signal import savgol_filter
+from scipy.stats import kstest
+import gensim
+import math
+import matplotlib.pyplot as plt
+import pickle
+import seaborn as sns
+from operator import itemgetter,attrgetter
+import scipy.stats as stats
+import pandas as pd
+from sklearn import linear_model
+import time
+import os
+import matplotlib.ticker as mtick
+from pylab import * 
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+
+def nowtime():
+    return time.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def save_obj(obj, file_name):
+    f = open(file_name, 'wb')
+    pickle.dump(obj, f)
+
+
+def load_obj(file_name):
+    with open(file_name, 'rb') as f:
+        return pickle.load(f, encoding='utf-8')
+
+x_max=180*math.pi/180*math.cos(math.pi/6)
+y_max=math.sin(90*math.pi/180)/math.cos(math.pi/6)
+print(x_max)
+print(y_max)
+
+my_dict=load_obj('D:\\Paul2017\\W2V\\flickr\\0907result_zhuan.dd')
+
+print(len(my_dict))
+
+result_zhuan = {}
+result_weizhuan = {}
+all_num = np.linspace(0, 9, 10, dtype='int8')
+print(all_num)
+ins_num = 0
+items = 0
+for i in all_num:
+    total = 0
+    good = 0
+    read_filename = 'D:\\Paul2017\\W2V\\flickr\\cut{}.txt'.format(i)
+    print(read_filename)
+    with open(read_filename, 'r') as fr:
+        for line in fr:
+            if 'instagram+app,iphoneography,square,square+format' in line:
+                line.replace(
+                    'instagram+app,iphoneography,square,square+format', '')
+                ins_num += 1
+                if ins_num % 10000 == 0:
+                    print(ins_num)
+            tags_x_y = line.split('\t')
+            # 用, + - / 把tags中的所有词语再切分一边
+            words = re.split('[,+-/]', tags_x_y[0])
+            latin_words = []
+            for word in words:  # 先用正则筛掉所有非拉丁字母的词语
+                if(re.match(r'^[A-Za-z0-9+-./\\]+$', word)):
+                    latin_words.append(word)
+            if len(latin_words) == 0:
+                continue
+            else:
+                items += 1
+                if items % 1000000 == 0:
+                    print(items)
+                # 转换成numpy数组用unique函数进行去重
+                lowers = []
+                for word in latin_words:
+                    lowers.append(word.lower())
+
+                latin_words_np = np.array(latin_words)
+                latin_words_np_unique = np.unique(latin_words_np)
+                x_weizhuan = float(tags_x_y[1])                 #不投影转换，用来可视化的dict
+                x_zhuan = x_weizhuan*math.pi/180*math.cos(math.pi/6)  # 进行投影转换，用来计算相似度的dict
+                y_weizhuan = float(tags_x_y[2].replace('\n', ''))
+                y_zhuan = math.sin(y_weizhuan*math.pi/180)/math.cos(math.pi/6)
+                xy_weizhuan = [x_weizhuan, y_weizhuan]
+                xy_zhuan = [x_zhuan, y_zhuan]
+
+                for word in latin_words_np_unique:
+                    if word in result_weizhuan:
+                        result_weizhuan[word].append(xy_weizhuan)
+                        result_zhuan[word].append(xy_zhuan)
+                    else:
+                        result_weizhuan[word] = [xy_weizhuan]
+                        result_zhuan[word] = [xy_zhuan]
+
+
+new_dict_weizhuan = {}
+new_dict_zhuan = {}
+for word in result_weizhuan:
+    if len(result_weizhuan[word]) >= 5000:
+        new_dict_weizhuan[word] = result_weizhuan[word]
+        new_dict_zhuan[word] = result_zhuan[word]
+
+
+new_dict_weizhuan2={}
+new_dict_zhuan2={}
+
+
+words_voc = np.loadtxt('D:\\Paul2017\\W2V\\flickr\\words.txt', dtype=str)
+words_voc_lowr = []
+for word in words_voc:
+    word_lower = word.lower()
+    words_voc_lowr.append(word_lower)
+
+
+
+
+
+for word in new_dict_weizhuan:
+    if word in words_voc_lowr:
+        new_dict_weizhuan2[word] = new_dict_weizhuan[word]
+        new_dict_zhuan2[word] = new_dict_zhuan[word]
+
+new_word_lists=[]
+for word in new_dict_weizhuan2:
+    unit=[]
+    unit=[word,len(new_dict_weizhuan2[word]),len(word)]
+    new_word_lists.append(unit)
+
+new_word_lists.to_excel('D:\\Paul2017\\W2V\\flickr\\newwordslist.xlsx')
+
+df=pd.read_csv('D:/Paul2017/W2V/flickr/5000words.csv')  
+words=np.array(df)
+words=np.squeeze(words)
+print(len(words))
+
+new_result_zhuan={}
+new_result_weizhuan={}
+for word in words:
+    new_result_zhuan[word]=new_dict_zhuan2[word]
+    new_result_weizhuan[word]=new_dict_weizhuan2[word]
+
+print(len(new_result_weizhuan),len(new_result_zhuan))
+
+save_obj(new_result_zhuan, 'D:\\Paul2017\\W2V\\flickr\\0718_5000_result_zhuan.dd')
+save_obj(new_result_weizhuan, 'D:\\Paul2017\\W2V\\flickr\\0717_5000_result_weizhuan.dd')
+
+save_obj(temp,'D:\\Paul2017\\W2V\\flickr\\6148ci_zhuan_dict.dd')
+
+word_nums = []
+for word in my_dict:
+    word_nums.append([word, len(my_dict[word])])
+word_nums.sort(key=lambda x: x[1], reverse=True)
+# with open('E:\\Paul2017\\data\\flickr\\cipin.csv', 'w') as fw:
+#     for unit in word_nums:
+#         fw.write(unit[0]+'\t'+str(unit[1])+'\r')
+
+word_nums
+
+words=[]
+for word in my_dict:
+    words.append(word)
+words_sorted=sorted(words,key= lambda i:len(i), reverse=False)
+print(words_sorted)
+
+words_sorted=np.array(words_sorted)
+df=pd.DataFrame(data=words_sorted)
+
+df.to_csv("E:\\Paul2017\\data\\flickr\\ciyu.csv",index=False)
+
+allnums=0
+for key in temp:
+    allnums+=len(temp[key])
+print(allnums)
+mean=allnums/len(temp)
+print(mean)
+
+plt.figure(dpi=300)
+plt.rcParams['font.family'] = 'Times New roman'
+plt.rcParams['axes.linewidth'] = 1
+plt.rcParams['font.size']=10
+# cipin_sorted=np.array(cipin_sorted)
+# y=cipin_sorted[:,1]
+# y=np.array(y,dtype=int)
+y=dists
+# y=np.sort(y)
+x=np.arange(0,len(y),1)
+plt.scatter(x,y,s=1)
+
+plt.show()
+
+# test_dict={}
+# test_dict['on']=my_dict['on']
+# test_dict['to']=my_dict['to']
+x_max=180*math.pi/180*math.cos(math.pi/6)
+y_max=math.sin(90*math.pi/180)/math.cos(math.pi/6)
+gewang=[10]
+dict_index={}
+num=0
+for word in my_dict:
+    num+=1
+    if num%100==0:
+        print(num)
+    this_index=[]
+    word_xy=np.array(my_dict[word])
+    for chidu in gewang:
+        fanwei=x_max*2/40076*chidu
+        portion_x = int(x_max*2 / fanwei)
+        
+        word_xid_yid=np.floor(((word_xy-np.array([-x_max,-y_max]))/np.array([fanwei,fanwei])))        
+        word_all_index = np.array(word_xid_yid[:,0]+word_xid_yid[:,1]*portion_x,dtype=int)
+        word_all_index=np.unique(word_all_index)
+        this_index.append(word_all_index)
+#         this_index.append(index_shu)
+    dict_index[word]=this_index
+
+
+def cal_cor_index_1ci(dict_2_index,gewang):
+    cor_list=[]
+    words=[]
+    for word in dict_2_index:
+        words.append(word)
+#     print(words)
+    worda=words[0]
+    wordb=words[1]
+    worda_indexs=dict_2_index[worda]
+    wordb_indexs=dict_2_index[wordb]
+    
+    for i in range(len(gewang)):
+        a=np.array(worda_indexs[i])
+        b=np.array(wordb_indexs[i])
+        ab=np.concatenate((a,b))
+        total=len(np.unique(ab))
+        valid=(len(a)+len(b))-total
+        cor=valid/total
+        cor_list.append(cor)
+    return cor_list
+
+
+all_cor_dict={}
+import itertools
+num=0
+# gewang=[1,5,10,20,50,100,150,200]
+# gewang=np.arange(1,101,1)
+for i in itertools.combinations_with_replacement(dict_index, 2):
+    num+=1
+    name=i[0]+' '+i[1]
+    if i[0]==i[1]:
+        continue
+#     all_cor_dict[name]=show_me(i[0],i[1])
+    dict_to_cal={}
+    dict_to_cal[i[0]]=dict_index[i[0]]
+    dict_to_cal[i[1]]=dict_index[i[1]]
+    all_cor_dict[name]=cal_cor_index_1ci(dict_to_cal,gewang)
+    
+    if num%10000==0:
+        print(num)
+
+
+
+# test_dict={}
+# test_dict['on']=my_dict['on']
+# test_dict['to']=my_dict['to']
+import random
+import itertools
+
+all_all_cor=[]
+for cishu in range(10):
+    x_max=180*math.pi/180*math.cos(math.pi/6)
+    y_max=math.sin(90*math.pi/180)/math.cos(math.pi/6)
+    gewang=[1,5,10,20,50,100,150,200]
+    dict_index={}
+    num=0
+    
+    for chidu in gewang:
+        fanwei=x_max*2/40076*chidu
+        portion_x = int(x_max*2 / fanwei)
+        portion_y = int(y_max*2 / fanwei)
+
+        x_pianyi=abs(random.gauss(fanwei,fanwei*0.2)-fanwei)
+        y_pianyi=abs(random.gauss(fanwei,fanwei*0.2)-fanwei)
+        
+        for word in my_dict:
+            word_xy=np.array(my_dict[word])
+            word_xid_yid=np.floor(((word_xy-np.array([-x_max+x_pianyi,-y_max+y_pianyi]))/np.array([fanwei,fanwei])))        
+            word_all_index = np.array(word_xid_yid[:,0]+word_xid_yid[:,1]*portion_x,dtype=int)
+            word_all_index=np.unique(word_all_index)
+            
+            if word in dict_index:
+                dict_index[word].append(word_all_index)
+            else:
+                dict_index[word]=[word_all_index]
+            
+    #         this_index.append(index_shu)
+
+
+    all_cor_dict={}
+    num=0
+    gewang=[1,5,10,20,50,100,150,200]
+
+    for i in itertools.combinations_with_replacement(dict_index, 2):
+        num+=1
+        name=i[0]+' '+i[1]
+        if i[0]==i[1]:
+            continue
+    #     all_cor_dict[name]=show_me(i[0],i[1])
+        dict_to_cal={}
+        dict_to_cal[i[0]]=dict_index[i[0]]
+        dict_to_cal[i[1]]=dict_index[i[1]]
+        all_cor_dict[name]=cal_cor_index_1ci(dict_to_cal,gewang)
+
+#         if num%10000==0:
+#             print(num)
+    print(cishu)
+#     all_all_cor.append(all_cor_dict)
+
+
+model_file_name = 'D:\\Paul2017\\W2V\\wiki.en\\wiki.en.vec'
+%time model=gensim.models.KeyedVectors.load_word2vec_format(model_file_name,encoding='utf8')
+print('模型加载完了，可以开始计算')
+model.most_similar('mar',topn=20)
+
+result_zhuan=load_obj('D:\\Paul2017\\W2V\\flickr\\0718_5000_result_zhuan.dd')
+
+words=list(my_dict.keys())    
+new_words=[]
+for word in words:           
+    if word in model.vocab:
+        new_words.append(word)
+    else:
+        print(word)
+print(len(new_words))
+
+words_2_sim = {}
+num = 0
+for i in itertools.combinations_with_replacement(new_words, 2):
+
+    worda = str(i[0])
+    wordb = str(i[1])
+    if worda == wordb:
+        continue
+    num += 1
+    if num % 100000 == 0:
+        print(num)
+    sim = model.similarity(worda, wordb)
+    words_2_sim[worda + ' ' + wordb] = sim
+print(num)
+
+ciyus=np.array(list(all_cor_dict.keys()))
+ciyus.shape=len(ciyus),1
+zhi=np.array(list(all_cor_dict.values()))
+
+sim=np.array(list(words_2_sim.values()))
+
+
+part=[0,0,0,0]
+for i in hebing:
+    x=i[1]
+    y=i[0]
+    if x>mean_tsim and y>=mean_ssim:
+        part[0]+=1
+        continue
+    elif x<=mean_tsim and y>mean_ssim:
+        part[1]+=1
+        continue
+    elif x<mean_tsim and y<=mean_ssim:
+        part[2]+=1
+        continue
+    elif x>=mean_tsim and y<mean_ssim:
+        part[3]+=1
+        continue
+
+save_obj(words_2_sim,"D:\\Paul2017\\W2V\\flickr\\1106_3594_2_words_sim.dd")
+
+words_2_sim=load_obj('D:\\Paul2017\\W2V\\flickr\\1106_3594_2_words_sim.dd')
+
+ciyu=np.array(list(all_cor_dict.keys()))
+zhi=np.array(list(all_cor_dict.values()))
+
+last=np.zeros([zhi.shape[0],zhi.shape[1]+1],dtype=np.object)
+last[:,0]=ciyu
+last[:,1:9]=zhi
+#[1,5,10,20,50,100,150,200]
+df=pd.DataFrame(last,columns=['WORDS','1','5','10','20','50','100','150','200'])
+
+# df['sem']=np.array(list(words_2_sim.values()))
+
+df=df.convert_objects(convert_numeric=True)
+
+save_obj(df,'D:\\Paul2017\\W2V\\flickr\\0623_1_5_10_20_50_100_150_200_sem.dd')
+
+chidu=[1,2,5,10,20,50]
+
+ciduis=[]   
+for cidui in sem_sim:
+    ciduis.append(cidui)
+
+
+
+listhe=[]
+for i in range(6):
+    list_one=[]
+    print(i)
+    for cidui in sem_sim:
+        unit=[]
+        unit=[sem_sim[cidui],spa_sim[cidui][i]]
+        list_one.append(unit)
+    listhe.append(list_one)
+    
+
+sem_list=np.array(list(sem_sim.values()))
+
+
+chidu=[1,2,5,10,20,50]
+
+
+
+df[df['WORDS']=='to on']
+
+to_plt=df_100.iloc[:,1]
+_min=np.min(to_plt)
+_max=np.max(to_plt)
+_range=_max-_min
+to_plt=(to_plt-_min)/_range
+df_100['100nor']=to_plt
+
+to_plt=df_100.iloc[:,2]
+_min=np.min(to_plt)
+_max=np.max(to_plt)
+_range=_max-_min
+to_plt=(to_plt-_min)/_range
+df_100['semnor']=to_plt
+
+df_100.columns
+
+all_num=len(df_100)
+spa_mean=mean(df_100['100nor'])
+print(spa_mean)
+sem_mean=mean(df_100['semnor'])
+print(sem_mean)
+print(len(df_100[(df_100['100nor']>=spa_mean) & (df_100['semnor']>=sem_mean)]),len(df_100[(df_100['100nor']>=spa_mean) & (df_100['semnor']>=sem_mean)])/all_num)
+print(len(df_100[(df_100['100nor']>=spa_mean) & (df_100['semnor']<sem_mean)]),len(df_100[(df_100['100nor']>=spa_mean) & (df_100['semnor']<sem_mean)])/all_num)
+print(len(df_100[(df_100['100nor']<spa_mean) & (df_100['semnor']<sem_mean)]),len(df_100[(df_100['100nor']<spa_mean) & (df_100['semnor']<sem_mean)])/all_num)
+print(len(df_100[(df_100['100nor']<spa_mean) & (df_100['semnor']>=sem_mean)]),len(df_100[(df_100['100nor']<spa_mean) & (df_100['semnor']>=sem_mean)])/all_num)
+
+df_100[df_100['WORDS']=='audi chevrolet']
+
+my_dict_top100.keys()
+
+
+
+def cal_cor_index_1ci(dict_2_index,gewang):
+    cor_list=[]
+    words=[]
+    for word in dict_2_index:
+        words.append(word)
+#     print(words)
+    worda=words[0]
+    wordb=words[1]
+    worda_indexs=dict_2_index[worda]
+    wordb_indexs=dict_2_index[wordb]
+    
+    for i in range(len(gewang)):
+        a=np.array(worda_indexs[i])
+        b=np.array(wordb_indexs[i])
+        ab=np.concatenate((a,b))
+        total=len(np.unique(ab))
+        valid=(len(a)+len(b))-total
+        cor=valid/total
+        cor_list.append(cor)
+    return cor_list
+
+top_cor_dict={}
+import itertools
+num=0
+gewang=[10,20,50,100,150,200]
+
+
+for i in itertools.combinations_with_replacement(dict_index, 2):
+    num+=1
+    name=i[0]+' '+i[1]
+    if i[0]==i[1]:
+        continue
+#     top_cor_dict[name]=show_me(i[0],i[1])
+    dict_to_cal={}
+    dict_to_cal[i[0]]=dict_index[i[0]]
+    dict_to_cal[i[1]]=dict_index[i[1]]
+    top_cor_dict[name]=cal_cor_index_1ci(dict_to_cal,gewang)
+    
+    if num%10000==0:
+        print(num)
+
+
+top_words=list(my_dict_top100.keys())
+words_2_sim = {}
+num = 0
+for i in itertools.combinations_with_replacement(top_words, 2):
+
+    worda = str(i[0])
+    wordb = str(i[1])
+    if worda == wordb:
+        continue
+    num += 1
+    if num % 100000 == 0:
+        print(num)
+    sim = model.similarity(worda, wordb)
+    words_2_sim[worda + ' ' + wordb] = sim
+print(num)
+
+spa_values=list(top_cor_dict.values())
+sem_values=list(words_2_sim.values())
+pair_words=list(top_cor_dict.keys())
+
+zonghe=[]
+for i in range(len(pair_words)):
+    unit=[pair_words[i],sem_values[i],spa_values[i][0],spa_values[i][1],spa_values[i][2],\
+          spa_values[i][3],spa_values[i][4],spa_values[i][5]]
+    zonghe.append(unit)
