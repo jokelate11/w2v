@@ -35,6 +35,7 @@ def load_obj(file_name):
     with open(file_name, 'rb') as f:
         return pickle.load(f, encoding='utf-8')
 
+#data pre-processing part
 x_max=180*math.pi/180*math.cos(math.pi/6)
 y_max=math.sin(90*math.pi/180)/math.cos(math.pi/6)
 print(x_max)
@@ -44,12 +45,14 @@ my_dict=load_obj('D:\\Paul2017\\W2V\\flickr\\0907result_zhuan.dd')
 
 print(len(my_dict))
 
+
+
 result_zhuan = {}
 result_weizhuan = {}
 all_num = np.linspace(0, 9, 10, dtype='int8')
 print(all_num)
 ins_num = 0
-items = 0
+items = 0 
 for i in all_num:
     total = 0
     good = 0
@@ -180,23 +183,7 @@ print(allnums)
 mean=allnums/len(temp)
 print(mean)
 
-plt.figure(dpi=300)
-plt.rcParams['font.family'] = 'Times New roman'
-plt.rcParams['axes.linewidth'] = 1
-plt.rcParams['font.size']=10
-# cipin_sorted=np.array(cipin_sorted)
-# y=cipin_sorted[:,1]
-# y=np.array(y,dtype=int)
-y=dists
-# y=np.sort(y)
-x=np.arange(0,len(y),1)
-plt.scatter(x,y,s=1)
-
-plt.show()
-
-# test_dict={}
-# test_dict['on']=my_dict['on']
-# test_dict['to']=my_dict['to']
+# algorithm part
 x_max=180*math.pi/180*math.cos(math.pi/6)
 y_max=math.sin(90*math.pi/180)/math.cos(math.pi/6)
 gewang=[10]
@@ -318,6 +305,24 @@ for cishu in range(10):
 #             print(num)
     print(cishu)
 #     all_all_cor.append(all_cor_dict)
+
+
+#Visualization part
+plt.figure(dpi=300)
+plt.rcParams['font.family'] = 'Times New roman'
+plt.rcParams['axes.linewidth'] = 1
+plt.rcParams['font.size']=10
+# cipin_sorted=np.array(cipin_sorted)
+# y=cipin_sorted[:,1]
+# y=np.array(y,dtype=int)
+y=dists
+# y=np.sort(y)
+x=np.arange(0,len(y),1)
+plt.scatter(x,y,s=1)
+
+plt.show()
+
+
 
 
 model_file_name = 'D:\\Paul2017\\W2V\\wiki.en\\wiki.en.vec'
