@@ -1,7 +1,14 @@
 Instruction of spatial context semantic similarity algorithm 
 
-This is the instruction of the code which contains data processing flow, algorithm and visualization. All the code is implemented in Python 3.6 in anaconda 2020.2 (https://www.anaconda.com/distribution/) and have been upload in github(https://github.com/jokelate11/w2v/edit/master/code).
+This is the instruction of the code which contains data processing flow, algorithm and visualization. All the code is implemented in Python
+3.6 in anaconda 2020.2 (https://www.anaconda.com/distribution/) and have been upload in github(https://github.com/jokelate11/w2v/edit/maste
+r/code).
 
-Before you run the code, you need make sure required third-party python packages that used in the code have been installed in your python environment: numpy, pandas, scipy, genism, matplotlib, seaborn, sklearn, pylab, pickle. If the code does not work properly, check the configuration of your python environment and these packages first.
+Before you run the code, you need make sure required third-party python packages that used in the code have been installed in your python 
+environment: numpy, pandas, scipy, genism, matplotlib, seaborn, sklearn, pylab, pickle. If the code does not work properly, check the 
+configuration of your python environment and these packages first.
 
-The code is organized as mounts of blocks, therefore the right way to use the code is running these blocks one by one. Several code blocks will produce computational results, so you should reset the output paths followed your computer configuration. All the original data (Flickr datasets) have been upload and managed in mendeley(https://data.mendeley.com/datasets/dvbdwcw6mj/1#folder-5d6f0a15-a1e9-4eeb-99b4-ac2c57bd9b55).
+The code is organized as mounts of blocks, therefore the right way to use the code is running these blocks one by one. Several code blocks 
+will produce computational results, so you should reset the output paths followed your computer configuration. All the original data 
+(Flickr datasets) have been upload and managed in mendeley(https://data.mendeley.com/datasets/dvbdwcw6mj/1#folder-5d6f0a15-a1e9-4eeb-99b4-a
+c2c57bd9b55).
